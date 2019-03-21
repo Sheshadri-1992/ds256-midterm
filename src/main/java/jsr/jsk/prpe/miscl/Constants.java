@@ -18,6 +18,7 @@ public class Constants {
 	public static final int HEARTBEAT_INTERVAL = 15000;
 	public static final String DIRECTORY_PATH = "./input/";
 	public static final String OUTPUT_DIR = "./output/";
+	public static final String TEMP_DIR = "./temp/";
 	public static final int WRITE_REQUEST = 1;
 	
 }

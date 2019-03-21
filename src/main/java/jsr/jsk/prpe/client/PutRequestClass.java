@@ -20,6 +20,8 @@ import org.slf4j.LoggerFactory;
 
 import jsr.jsk.prpe.erasurecoding.SampleEncoder;
 import jsr.jsk.prpe.miscl.Constants;
+import jsr.jsk.prpe.thrift.CloseFileRequest;
+import jsr.jsk.prpe.thrift.CloseFileResponse;
 import jsr.jsk.prpe.thrift.DataNodeLocation;
 import jsr.jsk.prpe.thrift.EdgeService;
 import jsr.jsk.prpe.thrift.MasterService;
@@ -54,7 +56,7 @@ public class PutRequestClass {
             try {
                 PutResponse myRes = edgeClient.put(myPutReq);
                 if (myRes.getResponse() == Constants.SUCCESS) {
-                    LOGGER.info("Erasure coded block successfully written ");                   
+                    LOGGER.info("Blocks successfully written ");                   
                 }
 
             } catch (TException e) {
@@ -78,16 +80,27 @@ public class PutRequestClass {
 		storageBudget = argStorageBudget;
 	}
 	
-	public void putFile() {
-		
-		LOGGER.info("A request for put has come filename "+inputFileName);
-		sessionHandle = openFileRequest(); 	/** Session handle is set here **/
-		writeFile();
+	public void openRequest() {
+		sessionHandle = openFileRequest();
 	}
 	
+	/**
+	 * This is an important method, since sessionhandle is used for all future interactions
+	 * @return The session handle is returned
+	 */
 	public int getSessionHandle() {
 		return sessionHandle;
 	}
+	
+	/** main method called from client driver which does put() **/
+	public void putFile() {
+		
+		LOGGER.info("A request for put has come filename "+inputFileName);
+		/** Session handle is set here **/
+		writeFile();
+	}
+	
+	
 	
 	/**
 	 * 
@@ -168,7 +181,7 @@ public class PutRequestClass {
 			while(index<fullBlocks) {
 				
 				byte[] buffer = new byte[Constants.BLOCKSIZE];				
-				myFileInput.read(buffer);
+				myFileInput.read(buffer); /** File reading happens here **/
 				
 				
 				writeBlocks(buffer);
@@ -176,11 +189,11 @@ public class PutRequestClass {
 				index++; /** very important **/
 			}/** End of while loop **/
 			
+			/** Last block of the file **/
 			int remainingBytes = filesize - fullBlocks*Constants.BLOCKSIZE;			
 			byte[] buffer = new byte[remainingBytes];			
 			myFileInput.read(buffer);
-			
-			
+						
 			writeBlocks(buffer);
 			myFileInput.close();			
 			
@@ -190,11 +203,14 @@ public class PutRequestClass {
 		}		
 	}
 	
+	/** Intermediate helper method 
+	 *  It passes the session handle to the master node to get the datanode locations to write the blocks
+	 * 
+	 * **/
 	private void writeBlocks(byte[] data) {
 		
 		WriteBlockRequest myWriteBlockReq = new WriteBlockRequest(sessionHandle); /** Session handle is passed here **/
 		
-
 		TTransport transport = new TFramedTransport(new TSocket(Constants.MASTER_IP, Constants.MASTER_PORT));
 		try {
 			transport.open();
@@ -222,13 +238,25 @@ public class PutRequestClass {
 				LOGGER.info("The location is "+myDataloc.getNodeid()+" : "+myDataloc.getIp()+ " : "+myDataloc.getPort());
 			}
 			
+			
 			if(type==Constants.REPLICATION) {
 				
+				long start = System.currentTimeMillis();
 				writeConcurrently(Constants.NUM_REPLICATION, Constants.REPLICATION,blockNum, data, myDataLocs);
+				long end = System.currentTimeMillis();
+				
+				long timePerBlock = end - start;
+				LOGGER.info("replication timing "+timePerBlock);
+				
 				
 			}else {
 				
+				long start = System.currentTimeMillis();
 				writeConcurrently(Constants.NUM_ERASURE_CODING, Constants.ERASURE_CODING, blockNum, data, myDataLocs);
+				long end = System.currentTimeMillis();
+				
+				long timePerBlock = end - start;
+				LOGGER.info("erasure coding timing "+timePerBlock);
 			}
 			
 			
@@ -240,20 +268,8 @@ public class PutRequestClass {
 	}
 	
 	
-	//TODO : multi-threading has to be done still
+	/** ACtual writing happens here, either Erasure coding or replication **/
 	public void writeConcurrently(int numThreads, int type,int blockNum ,byte[] data,ArrayList<DataNodeLocation> myDataLocs) {
-		
-		try {
-			FileOutputStream myOutStream = new FileOutputStream(new File(blockNum+""));
-			myOutStream.write(data);
-			myOutStream.close();
-		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		
 		if(type==Constants.ERASURE_CODING) { /**ERASURE CODING **/
 			SampleEncoder myEncoder = new SampleEncoder();
@@ -289,8 +305,7 @@ public class PutRequestClass {
 	    		EdgeService.Client myClient = new EdgeService.Client(protocol);
 	    		
 	    		threads[index] = new MyThread(index+"", myClient, blockNum+"", data);
-	    		threads[index].start();
-	    		
+	    		threads[index].start();	    		
 	    		
 	    		index++; /**This is important **/
 			}
@@ -306,5 +321,31 @@ public class PutRequestClass {
 		}
 		
 	}
+	
+	/** Close request to clear the session **/
+	public void closeRequest() {
+		TTransport transport = new TFramedTransport(new TSocket(Constants.MASTER_IP, Constants.MASTER_PORT));
+		try {
+			transport.open();
+		} catch (TTransportException e) {
+			transport.close();
+			LOGGER.error("Error opening connection to Master IP : {} and port : {}", Constants.MASTER_IP,
+					Constants.MASTER_PORT);
+			e.printStackTrace();
+		}
+
+		TProtocol protocol = new TBinaryProtocol(transport);
+		MasterService.Client masterClient = new MasterService.Client(protocol);
+
+		LOGGER.info("Close block Request with master ");
+		try {
+			CloseFileResponse response = masterClient.closeFile(new CloseFileRequest(sessionHandle));
+			LOGGER.info("The response is " + response.getStatus());
+		} catch (TException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
 	
 }

@@ -62,6 +62,11 @@ public class SampleDecoder {
 //            LOGGER.info("Cannot read input file: " + originalFile);
 //            return;
 //        }
+    	File myDir = new File(Constants.TEMP_DIR);
+    	if(myDir.exists()==false) {
+    		myDir.mkdir();
+    		LOGGER.info("Created the directory ");
+    	}
         
         for(DataNodeLocation dataloc : myDataNodeLoc) {
         	
@@ -87,7 +92,9 @@ public class SampleDecoder {
 				String blockNum = myRes.getBlockNumber();
 				byte[] data = myRes.getData();
 				LOGGER.info("The block number sent is "+blockNum); /**Sheshadri this is important **/
-				FileOutputStream myOutStream = new FileOutputStream(new File(blockNum));
+				
+				/**Write this to intermediate directory**/
+				FileOutputStream myOutStream = new FileOutputStream(new File(Constants.TEMP_DIR+blockNum));
 				myOutStream.write(data);
 				myOutStream.close();
 
@@ -110,7 +117,7 @@ public class SampleDecoder {
         for (int i = 0; i < TOTAL_SHARDS; i++) {
 //        	LOGGER.info(originalFile.getParentFile()+                  originalFile.getName() + "." + i);
             File shardFile = new File(
-            		blockNumber + ":" + i); /** This is important **/
+            		Constants.TEMP_DIR+blockNumber + ":" + i); /** This is important **/
             if (shardFile.exists()) {
                 shardSize = (int) shardFile.length();
                 shards[i] = new byte [shardSize];

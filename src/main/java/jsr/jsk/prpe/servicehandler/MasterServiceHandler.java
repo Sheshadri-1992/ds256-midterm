@@ -58,8 +58,10 @@ public class MasterServiceHandler implements MasterService.Iface{
 		edgeDevicesList = new ArrayList<DataNodeLocation>();
 	}
 
-	
-	
+	/**
+	 * The session handle is returned by this method
+	 * This is the first method that is called by the client when it wasnts to put a file
+	 */
 	public OpenFileResponse openFile(OpenFileRequest req) throws TException {
 		
 		String filename = req.getFilename();

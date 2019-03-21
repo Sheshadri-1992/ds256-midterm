@@ -89,21 +89,19 @@ public class SampleEncoder {
 
     public void encode(String filename, ArrayList<DataNodeLocation> myDataLoc, byte[] data) throws IOException {
 
-//      f (arguments.length != 1) {
-//            System.out.println("Usage: SampleEncoder <fileName>");
+
+//        final File inputFile = new File(filename);
+//        if (!inputFile.exists()) {
+//            System.out.println("Cannot read input file: " + inputFile);
 //            return;
 //        }
-        final File inputFile = new File(filename);
-        if (!inputFile.exists()) {
-            System.out.println("Cannot read input file: " + inputFile);
-            return;
-        }
         
         System.out.println("The number of shards are "+TOTAL_SHARDS);
 
         // Get the size of the input file.  (Files bigger that
         // Integer.MAX_VALUE will fail here!)
-        final int fileSize = (int) inputFile.length();
+//        final int fileSize = (int) inputFile.length();
+        final int fileSize = (int) data.length;
 
         // Figure out how big each shard will be.  The total size stored
         // will be the file size (8 bytes) plus the file.
@@ -115,12 +113,16 @@ public class SampleEncoder {
         final int bufferSize = shardSize * DATA_SHARDS;
         final byte [] allBytes = new byte[bufferSize];
         ByteBuffer.wrap(allBytes).putInt(fileSize);
-        InputStream in = new FileInputStream(inputFile);
+        
+        
+        /** InputStream in = new FileInputStream(inputFile);
         int bytesRead = in.read(allBytes, BYTES_IN_INT, fileSize);
         if (bytesRead != fileSize) {
             throw new IOException("not enough bytes read");
         }
-        in.close();
+        in.close(); **/ //Commented by Sheshadri 
+        
+        System.arraycopy(data, 0, allBytes, BYTES_IN_INT, fileSize); /** This is the change I made : Sheshadri **/
 
         // Make the buffers to hold the shards.
         byte [] [] shards = new byte [TOTAL_SHARDS] [shardSize];
@@ -136,7 +138,7 @@ public class SampleEncoder {
         
         MyThread[] threads = new MyThread[TOTAL_SHARDS];
         
-        // Write out the resulting files.
+        /** Multiple threads for Writing parallel **/
         for (int i = 0; i < TOTAL_SHARDS; i++) {
 
             String outputFile = filename + ":" + i;
@@ -159,17 +161,6 @@ public class SampleEncoder {
             threads[i] = new MyThread("Thread #" + i,myClient,outputFile,shards[i]);
             threads[i].start();
             
-//            PutRequest myPutReq = new PutRequest(outputFile, ByteBuffer.wrap(shards[i])); /**THIS was the EPIC MISTAKE **/
-//            try {
-//                PutResponse myRes = myClient.put(myPutReq);
-//                if (myRes.getResponse() == Constants.SUCCESS) {
-//                    LOGGER.info("Erasure coded block successfully written ");                   
-//                }
-//
-//            } catch (TException e) {
-//
-//                e.printStackTrace();
-//            }
 
         }
         
