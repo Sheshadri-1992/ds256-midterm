@@ -158,8 +158,7 @@ public class SampleEncoder {
             
             threads[i] = new MyThread("Thread #" + i,myClient,outputFile,shards[i]);
             threads[i].start();
-
-
+            
 //            PutRequest myPutReq = new PutRequest(outputFile, ByteBuffer.wrap(shards[i])); /**THIS was the EPIC MISTAKE **/
 //            try {
 //                PutResponse myRes = myClient.put(myPutReq);

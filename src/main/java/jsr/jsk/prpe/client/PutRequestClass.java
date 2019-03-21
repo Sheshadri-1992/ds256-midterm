@@ -31,6 +31,39 @@ import jsr.jsk.prpe.thrift.WriteBlockRequest;
 import jsr.jsk.prpe.thrift.WriteBlockResponse;
 
 public class PutRequestClass {
+	
+	
+	class MyThread extends Thread {
+
+		private EdgeService.Client edgeClient = null;
+		private String outputFile = "";
+		private byte[] shards = null;
+		
+		public MyThread(String s, EdgeService.Client myClient, String outputFile, byte[] shard) {
+			super(s);
+			
+			edgeClient = myClient;
+			this.outputFile = outputFile;
+			shards = shard;
+		}
+
+		public void run() {
+			System.out.println("Replication Running Thread: " + getName());
+			
+			PutRequest myPutReq = new PutRequest(outputFile, ByteBuffer.wrap(shards)); /**THIS was the EPIC MISTAKE **/
+            try {
+                PutResponse myRes = edgeClient.put(myPutReq);
+                if (myRes.getResponse() == Constants.SUCCESS) {
+                    LOGGER.info("Erasure coded block successfully written ");                   
+                }
+
+            } catch (TException e) {
+
+                e.printStackTrace();
+            }
+		}
+	}/**End of multi threading class **/
+
 
 	private String inputFileName= "";
 	private String inputDirPath = "";
@@ -234,6 +267,9 @@ public class PutRequestClass {
 		}else { /** REPLICATION **/
 			LOGGER.info("Case of replication");
 			
+			MyThread threads[] = new MyThread[Constants.NUM_REPLICATION];
+			int index = 0;
+			
 			for(DataNodeLocation myDataLoc : myDataLocs) {
 				
 				String IP = myDataLoc.getIp();
@@ -251,16 +287,19 @@ public class PutRequestClass {
 	    		
 	    		TProtocol protocol = new TBinaryProtocol(transport);
 	    		EdgeService.Client myClient = new EdgeService.Client(protocol);
-
-	    		PutRequest myPutReq = new PutRequest(blockNum+"", ByteBuffer.wrap(data));
-	    		try {
-					PutResponse myRes = myClient.put(myPutReq);
-					if(myRes.getResponse()==Constants.SUCCESS) {
-						LOGGER.info("Replicated block successfully written ");;
-					}
-					
-				} catch (TException e) {
-				
+	    		
+	    		threads[index] = new MyThread(index+"", myClient, blockNum+"", data);
+	    		threads[index].start();
+	    		
+	    		
+	    		index++; /**This is important **/
+			}
+			
+			for(int i=0;i<Constants.NUM_REPLICATION;i++) {
+				try {
+					threads[i].join();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}

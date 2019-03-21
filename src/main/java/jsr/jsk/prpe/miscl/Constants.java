@@ -3,7 +3,7 @@ package jsr.jsk.prpe.miscl;
 public class Constants {
 	
 	public static final int MASTER_PORT = 8080;
-	public static final String MASTER_IP = "127.0.0.1";
+	public static final String MASTER_IP = "10.24.24.235";
 	public static final int HEALTHY = 1;
 	public static final int UNHEALTHY = 0;
 	public static final double RELIABILITY = 0.95;
