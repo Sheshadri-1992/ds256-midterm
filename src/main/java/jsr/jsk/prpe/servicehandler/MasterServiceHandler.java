@@ -88,6 +88,7 @@ public class MasterServiceHandler implements MasterService.Iface {
 		edgeDevicesList = new HashMap<Integer, DataNodeLocation>();
 		edgeHeartbeatHashMap = new ConcurrentHashMap<Integer, Long>();
 		edgeHeartbeatsMissedHashMap = new ConcurrentHashMap<Integer, Integer>();
+		edgesToRecover = new ArrayList<Integer>();
 		myHbcheck = new HeartBeatCheckThread();
 		myRecovery = new RecoveryThread();
 
@@ -97,27 +98,31 @@ public class MasterServiceHandler implements MasterService.Iface {
 			public void run() {
 				
 				while(true) {
+
+					ArrayList<Integer> tempRecover = myHbcheck.updateHeartBeat(edgeHeartbeatHashMap);
 					
-					synchronized (edgesToRecover) {
-						edgesToRecover = myHbcheck.updateHeartBeat(edgeHeartbeatHashMap);
-						if(edgesToRecover.size()>0) {
-							
-							for(Integer edgeId : edgesToRecover) {
-							
-								edgeHeartbeatHashMap.remove(edgeId);
-								edgeHeartbeatsMissedHashMap.remove(edgeId);
-							}
-							
-						}
+					if(tempRecover.size()>0) {
+						LOGGER.info("The dead edges are "+tempRecover);
+						edgesToRecover.addAll(tempRecover);
 					}
-					
-					
+					LOGGER.info("The number of edges dead is " + edgesToRecover.size());
+					if (edgesToRecover.size() > 0) {
+
+						for (Integer edgeId : edgesToRecover) {
+
+							LOGGER.info("Removing entries for hearbeat for edgeId "+edgeId);
+							edgeHeartbeatHashMap.remove(edgeId);
+							edgeHeartbeatsMissedHashMap.remove(edgeId);
+						}
+
+					}
+										
 					try {
-						Thread.sleep(Constants.RECOVERY_INTERVAL);
+						Thread.sleep(Constants.HEARTBEAT_CHECK_INTERVAL);
 					} catch (InterruptedException e) {					
 						e.printStackTrace();
 					}
-				}
+				} /** End of while loop **/
 				
 			}
 		};
@@ -129,7 +134,17 @@ public class MasterServiceHandler implements MasterService.Iface {
 
 			@Override
 			public void run() {
-				startRecovery();
+				
+				while(true) {
+					startRecovery();
+					
+					try {
+						Thread.sleep(Constants.RECOVERY_INTERVAL);
+					} catch (InterruptedException e) {					
+						e.printStackTrace();
+					}
+				}
+				
 			}
 			
 		};
@@ -139,7 +154,7 @@ public class MasterServiceHandler implements MasterService.Iface {
 	}
 	
 	
-	private synchronized void startRecovery() {
+	private void startRecovery() {
 		
 		HashMap<Integer, Integer> blocksLostHashMap = new HashMap<Integer, Integer>();
 		ArrayList<DataNodeLocation> availableEdges = new ArrayList<DataNodeLocation>();
@@ -208,6 +223,11 @@ public class MasterServiceHandler implements MasterService.Iface {
 			edgeHeartbeatsMissedHashMap.remove(edgeId);
 		}
 		
+		for(DataNodeLocation myDataLoc : deadEdges) {
+			boolean result = edgesToRecover.remove(new Integer(myDataLoc.getNodeid()));
+			LOGGER.info("The element we tried to remove "+myDataLoc.getNodeid());
+			LOGGER.info("edgesToRecover contains that element? "+edgesToRecover.contains(new Integer(myDataLoc.getNodeid())));
+		}
 	}
 	
 
@@ -311,7 +331,7 @@ public class MasterServiceHandler implements MasterService.Iface {
 						count++; /** Incremented count **/
 						myHashSet.add(index);
 
-						DataNodeLocation myLoc = ((ArrayList<DataNodeLocation>)edgeDevicesList.values()).get(index); /** Sheshadri has made a change here **/
+						DataNodeLocation myLoc = (new ArrayList<DataNodeLocation>(edgeDevicesList.values())).get(index); /** Sheshadri has made a change here **/
 						LOGGER.info("Case Replication : Added a location " + myLoc.getIp() + " : " + myLoc.getPort());
 						myNodeLocations.add(myLoc);
 					}
@@ -333,7 +353,7 @@ public class MasterServiceHandler implements MasterService.Iface {
 						count++; /** Incremented count **/
 						myHashSet.add(index);
 
-						DataNodeLocation myLoc = ((ArrayList<DataNodeLocation>)edgeDevicesList.values()).get(index); /** Sheshadri has made a change here **/
+						DataNodeLocation myLoc = (new ArrayList<DataNodeLocation>(edgeDevicesList.values())).get(index); /** Sheshadri has made a change here **/
 						LOGGER.info(
 								"Case Erasure Coding : Added a location " + myLoc.getIp() + " : " + myLoc.getPort());
 						myNodeLocations.add(myLoc);
@@ -490,7 +510,8 @@ public class MasterServiceHandler implements MasterService.Iface {
 		edgeDevicesList.clear();
 		edgeHeartbeatHashMap.clear();
 		edgeHeartbeatsMissedHashMap.clear();
-
+		edgesToRecover.clear();
+		
 		CloseFileResponse response = new CloseFileResponse(Constants.SUCCESS);
 		return response;
 	}
