@@ -71,8 +71,7 @@ public class EdgeServer {
 				
 			}
 		};
-		
-		
+				
 		Runnable masterRunnable = new Runnable() {
 			
 			@Override
@@ -148,5 +147,4 @@ public class EdgeServer {
 		}
 	}
 	
-
 }

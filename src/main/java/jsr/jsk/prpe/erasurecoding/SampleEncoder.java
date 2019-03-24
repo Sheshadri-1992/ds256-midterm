@@ -90,12 +90,6 @@ public class SampleEncoder {
     public void encode(String filename, ArrayList<DataNodeLocation> myDataLoc, byte[] data) throws IOException {
 
 
-//        final File inputFile = new File(filename);
-//        if (!inputFile.exists()) {
-//            System.out.println("Cannot read input file: " + inputFile);
-//            return;
-//        }
-        
         System.out.println("The number of shards are "+TOTAL_SHARDS);
 
         // Get the size of the input file.  (Files bigger that
@@ -173,5 +167,98 @@ public class SampleEncoder {
 				e.printStackTrace();
 			}
         }
+    }
+    
+    
+    public void encodeRecovery(String filename, ArrayList<String> lostBlocks ,ArrayList<DataNodeLocation> myDataLoc, byte[] data) throws IOException {
+
+    	LOGGER.info("Entered the recovery encoded method in Erasure coding");
+    	// Get the size of the input file.  (Files bigger that
+        // Integer.MAX_VALUE will fail here!)
+//        final int fileSize = (int) inputFile.length();
+        final int fileSize = (int) data.length;
+
+        // Figure out how big each shard will be.  The total size stored
+        // will be the file size (8 bytes) plus the file.
+        final int storedSize = fileSize + BYTES_IN_INT;
+        final int shardSize = (storedSize + DATA_SHARDS - 1) / DATA_SHARDS;
+
+        // Create a buffer holding the file size, followed by
+        // the contents of the file.
+        final int bufferSize = shardSize * DATA_SHARDS;
+        final byte [] allBytes = new byte[bufferSize];
+        ByteBuffer.wrap(allBytes).putInt(fileSize);
+        
+        
+        /** InputStream in = new FileInputStream(inputFile);
+        int bytesRead = in.read(allBytes, BYTES_IN_INT, fileSize);
+        if (bytesRead != fileSize) {
+            throw new IOException("not enough bytes read");
+        }
+        in.close(); **/ //Commented by Sheshadri 
+        
+        System.arraycopy(data, 0, allBytes, BYTES_IN_INT, fileSize); /** This is the change I made : Sheshadri **/
+
+        // Make the buffers to hold the shards.
+        byte [] [] shards = new byte [TOTAL_SHARDS] [shardSize];
+
+        // Fill in the data shards
+        for (int i = 0; i < DATA_SHARDS; i++) {
+            System.arraycopy(allBytes, i * shardSize, shards[i], 0, shardSize);
+        }
+
+        // Use Reed-Solomon to calculate the parity.
+        ReedSolomon reedSolomon = ReedSolomon.create(DATA_SHARDS, PARITY_SHARDS);
+        reedSolomon.encodeParity(shards, 0, shardSize);
+        
+        MyThread[] threads = new MyThread[TOTAL_SHARDS];
+        
+        LOGGER.info("The blocks that are lost are "+lostBlocks.toString());
+        
+        /** Multiple threads for Writing parallel **/
+        int recIndex = 0;
+        for (int i = 0; i < TOTAL_SHARDS; i++) {
+
+            String outputFile = filename + ":" + i;           
+            
+            if(lostBlocks.contains(outputFile)==false) { /** this is important **/
+            	LOGGER.info("Recovery : avoiding already available put blocks ");
+            	continue;
+            }
+            
+            String IP = myDataLoc.get(recIndex).getIp(); /**Errors can spring up here!! **/
+            int port = myDataLoc.get(recIndex).getPort();
+            
+            TTransport transport = new TFramedTransport(new TSocket(IP, port));
+            try {
+                transport.open();
+            } catch (TTransportException e) {
+                transport.close();
+                LOGGER.error("Recovery Error opening connection to Master IP : {} and port : {}", IP, port);
+                e.printStackTrace();
+                return;
+            }
+
+            TProtocol protocol = new TBinaryProtocol(transport);
+            EdgeService.Client myClient = new EdgeService.Client(protocol);
+            
+            threads[i] = new MyThread("Thread #" + i,myClient,outputFile,shards[i]);
+            threads[i].start();
+            
+            recIndex++; /**This is important **/
+        }
+        
+        /**Important part **/
+        for(int i=0;i< TOTAL_SHARDS;i++) {
+        	try {
+				threads[i].join();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        }
+        
+        LOGGER.info("Recovery Successfully written the lost erasure coded blocks ");
+
     }
 }

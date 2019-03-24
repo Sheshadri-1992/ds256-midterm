@@ -107,6 +107,9 @@ service MasterService {
 	HeartBeatResponse heartbeat(1:HeartBeatRequest heartBeatReq);
 
 	CloseFileResponse closeFile(1:CloseFileRequest req);
+
+	/** Warning use this method with caution **/
+	CloseFileResponse clearStructures();
 }
 
 

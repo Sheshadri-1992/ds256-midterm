@@ -3,7 +3,7 @@ package jsr.jsk.prpe.miscl;
 public class Constants {
 	
 	public static final int MASTER_PORT = 8080;
-	public static final String MASTER_IP = "10.24.24.235";
+	public static final String MASTER_IP = "127.0.0.1";
 	public static final int HEALTHY = 1;
 	public static final int UNHEALTHY = 0;
 	public static final double RELIABILITY = 0.95;
@@ -16,9 +16,12 @@ public class Constants {
 	public static final int NUM_ERASURE_CODING = 6;
 	public static final String EDGE_DIR = "./data";
 	public static final int HEARTBEAT_INTERVAL = 15000;
+	public static final int RECOVERY_INTERVAL = 30000;
 	public static final String DIRECTORY_PATH = "./input/";
 	public static final String OUTPUT_DIR = "./output/";
 	public static final String TEMP_DIR = "./temp/";
+	public static final String RECOVERY_DIR = "./recovery/";
+	public static final String LOGS_DIR = "./Logs/";
 	public static final int WRITE_REQUEST = 1;
-	
+	public static final int ALLOWED_HB_MISS = 3;
 }

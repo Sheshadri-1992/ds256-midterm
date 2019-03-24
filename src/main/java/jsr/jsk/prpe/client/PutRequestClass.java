@@ -71,9 +71,16 @@ public class PutRequestClass {
 	private String inputDirPath = "";
 	private double storageBudget = 1.5;
 	private int sessionHandle = 0;
+	private FileOutputStream replicationStream;
+	private FileOutputStream erasureCodingStream;
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(PutRequestClass.class);
 	
+	/**
+	 * Constructor
+	 * @param argFileName
+	 * @param argStorageBudget
+	 */
 	public PutRequestClass(String argFileName, double argStorageBudget) {
 		inputFileName = argFileName;
 		inputDirPath = Constants.DIRECTORY_PATH;
@@ -82,6 +89,20 @@ public class PutRequestClass {
 	
 	public void openRequest() {
 		sessionHandle = openFileRequest();
+
+		/** Create the logs directory to save the timings for erasure code and replication **/
+		File myFile = new File(Constants.LOGS_DIR);
+		if (myFile.exists() == false)
+			myFile.mkdir();
+		
+		/** Create log streams **/
+		try {
+			replicationStream = new FileOutputStream(new File(Constants.LOGS_DIR + "rlogs.txt"),true);
+			erasureCodingStream = new FileOutputStream(new File(Constants.LOGS_DIR + "elogs.txt"),true);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 	}
 	
 	/**
@@ -163,16 +184,9 @@ public class PutRequestClass {
 		
 		double numBlocks = filesize / (1.0 *Constants.BLOCKSIZE);		
 		double integerPart = (int) Math.floor(numBlocks);		
-		double fractionPart = numBlocks - integerPart;
-		
-		int fullBlocks =0, partialBlocks = 0;
-		
-		if(fractionPart==0.0) {
-			fullBlocks = (int) integerPart;
-		}else {
-			fullBlocks = (int) integerPart;
-			partialBlocks = 1;
-		}
+	
+		int fullBlocks =0;
+		fullBlocks = (int) integerPart;
 		
 		try {
 			FileInputStream myFileInput = new FileInputStream(myFile);
@@ -182,7 +196,6 @@ public class PutRequestClass {
 				
 				byte[] buffer = new byte[Constants.BLOCKSIZE];				
 				myFileInput.read(buffer); /** File reading happens here **/
-				
 				
 				writeBlocks(buffer);
 				LOGGER.info("The bytes about to be written are "+buffer.length);
@@ -198,7 +211,6 @@ public class PutRequestClass {
 			myFileInput.close();			
 			
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}		
 	}
@@ -237,8 +249,7 @@ public class PutRequestClass {
 			for(DataNodeLocation myDataloc : myDataLocs) {
 				LOGGER.info("The location is "+myDataloc.getNodeid()+" : "+myDataloc.getIp()+ " : "+myDataloc.getPort());
 			}
-			
-			
+					
 			if(type==Constants.REPLICATION) {
 				
 				long start = System.currentTimeMillis();
@@ -247,7 +258,8 @@ public class PutRequestClass {
 				
 				long timePerBlock = end - start;
 				LOGGER.info("replication timing "+timePerBlock);
-				
+				String row = blockNum+","+timePerBlock+"\n";
+				replicationStream.write(row.getBytes());
 				
 			}else {
 				
@@ -257,16 +269,19 @@ public class PutRequestClass {
 				
 				long timePerBlock = end - start;
 				LOGGER.info("erasure coding timing "+timePerBlock);
+				String row = blockNum+","+timePerBlock+"\n";
+				erasureCodingStream.write(row.getBytes());
 			}
-			
 			
 		} catch (TException e) {
 		
 			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		
 	}
-	
 	
 	/** ACtual writing happens here, either Erasure coding or replication **/
 	public void writeConcurrently(int numThreads, int type,int blockNum ,byte[] data,ArrayList<DataNodeLocation> myDataLocs) {
@@ -276,8 +291,7 @@ public class PutRequestClass {
 			try {
 				LOGGER.info("Case of Erasure coding");
 				myEncoder.encode(blockNum+"", myDataLocs, data);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
+			} catch (IOException e) {				
 				e.printStackTrace();
 			}
 		}else { /** REPLICATION **/
@@ -318,8 +332,7 @@ public class PutRequestClass {
 					e.printStackTrace();
 				}
 			}
-		}
-		
+		}		
 	}
 	
 	/** Close request to clear the session **/
@@ -342,6 +355,16 @@ public class PutRequestClass {
 			CloseFileResponse response = masterClient.closeFile(new CloseFileRequest(sessionHandle));
 			LOGGER.info("The response is " + response.getStatus());
 		} catch (TException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		/** close the file streams **/
+		try {
+			erasureCodingStream.close();
+			erasureCodingStream.close();
+		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
