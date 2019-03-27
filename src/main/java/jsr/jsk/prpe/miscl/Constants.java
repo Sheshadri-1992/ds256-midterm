@@ -17,7 +17,7 @@ public class Constants {
 	public static final String EDGE_DIR = "./data";
 	public static final int HEARTBEAT_INTERVAL = 15000;
 	public static final int HEARTBEAT_CHECK_INTERVAL = 15000;
-	public static final int RECOVERY_INTERVAL = 45000;
+	public static final int RECOVERY_INTERVAL = 60000;
 	public static final String DIRECTORY_PATH = "./input/";
 	public static final String OUTPUT_DIR = "./output/";
 	public static final String TEMP_DIR = "./temp/";

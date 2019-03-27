@@ -173,6 +173,7 @@ public class SampleEncoder {
     public void encodeRecovery(String filename, ArrayList<String> lostBlocks ,ArrayList<DataNodeLocation> myDataLoc, byte[] data) throws IOException {
 
     	LOGGER.info("Entered the recovery encoded method in Erasure coding");
+    	LOGGER.info("Size of data being sent is "+data.length);
     	// Get the size of the input file.  (Files bigger that
         // Integer.MAX_VALUE will fail here!)
 //        final int fileSize = (int) inputFile.length();
@@ -218,14 +219,12 @@ public class SampleEncoder {
         /** Multiple threads for Writing parallel **/
         int recIndex = 0;
         for (int i = 0; i < TOTAL_SHARDS; i++) {
-
-            String outputFile = filename + ":" + i;           
-            
-            if(lostBlocks.contains(outputFile)==false) { /** this is important **/
-            	LOGGER.info("Recovery : avoiding already available put blocks ");
-            	continue;
-            }
-            
+        	
+        	String outputFile = filename + ":" + i;
+        	
+        	if(recIndex>=myDataLoc.size())
+        		recIndex = 0;
+                        
             String IP = myDataLoc.get(recIndex).getIp(); /**Errors can spring up here!! **/
             int port = myDataLoc.get(recIndex).getPort();
             
@@ -243,9 +242,17 @@ public class SampleEncoder {
             EdgeService.Client myClient = new EdgeService.Client(protocol);
             
             threads[i] = new MyThread("Thread #" + i,myClient,outputFile,shards[i]);
+            
+            if(lostBlocks.contains(outputFile)==false) { /** this is important **/
+            	LOGGER.info("Recovery : avoiding already available put blocks ");
+            	continue;
+            }/** Maybe this was the error **/
+            
+            LOGGER.info("Recovery : Block will be recovered ");
             threads[i].start();
             
-            recIndex++; /**This is important **/
+            if(recIndex<myDataLoc.size())
+            	recIndex++; /**This is important **/
         }
         
         /**Important part **/

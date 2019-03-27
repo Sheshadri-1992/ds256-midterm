@@ -53,7 +53,7 @@ public class RecoveryThread {
 			ArrayList<DataNodeLocation> availableEdges,
 			ArrayList<DataNodeLocation> deadEdges) {
 
-		HashMap<Integer, ArrayList<DataNodeLocation>> newBlocksHashMap = new HashMap<Integer, ArrayList<DataNodeLocation>>();
+//		HashMap<Integer, ArrayList<DataNodeLocation>> newBlocksHashMap = new HashMap<Integer, ArrayList<DataNodeLocation>>();
 		
 		/** Lets start by iterating over blocks one by one **/
 		for (Integer blockId : blocksLostHashMap.keySet()) {
@@ -92,7 +92,7 @@ public class RecoveryThread {
 			LOGGER.info("The block id is "+blockId+" The locations are "+newBlockLocatoinsHashMap.get(blockId));
 		}
 
-		return newBlocksHashMap;
+		return newBlockLocatoinsHashMap;
 		
 	}
 	

@@ -56,7 +56,7 @@ public class ClientDriver {
 			filenames[i] = "microbatch" + i + ".txt";
 		}
 
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < 1; i++) {
 			if (choice == 0) { /** Put Request **/
 
 				LOGGER.info("The choice is put ");

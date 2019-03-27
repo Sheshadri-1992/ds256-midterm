@@ -161,9 +161,10 @@ public class SampleDecoder {
         // Write the decoded file
         File decodedFile = new File(Constants.OUTPUT_DIR+blockNumber + ".decoded");/** Sheshadri Edited this **/
         OutputStream out = new FileOutputStream(decodedFile);
-        LOGGER.info("Amount of bytes written "+BYTES_IN_INT);
+        LOGGER.info("Amount of bytes written "+fileSize);
         out.write(allBytes, BYTES_IN_INT, fileSize);
         LOGGER.info("Wrote " + decodedFile);
+        
     }
     
     /** This is for recovery **/
@@ -279,11 +280,20 @@ public class SampleDecoder {
         // Write the decoded file
         File decodedFile = new File(Constants.RECOVERY_DIR+blockNumber);/** Sheshadri Edited this **/
         OutputStream out = new FileOutputStream(decodedFile);
-        LOGGER.info("Recovery Amount of bytes written "+BYTES_IN_INT);
-        out.write(allBytes, BYTES_IN_INT, fileSize);
-        LOGGER.info("Recovery sWrote " + decodedFile);
         
-        return allBytes;
+        out.write(allBytes, BYTES_IN_INT, fileSize);
+        LOGGER.info("Recovery Amount of bytes written "+fileSize);
+        LOGGER.info("Recovery Wrote " + decodedFile);
+        
+        
+        int lengthOfBytesToRead = (int) decodedFile.length();
+        FileInputStream myFileStream = new FileInputStream(new File(Constants.RECOVERY_DIR+blockNumber));
+        byte[] outputBytes = new byte[lengthOfBytesToRead];
+        myFileStream.read(outputBytes);
+        
+        LOGGER.info("SampleDecoder sending bytes.. "+outputBytes.length);
+        
+        return outputBytes;
     }
     
     /**
