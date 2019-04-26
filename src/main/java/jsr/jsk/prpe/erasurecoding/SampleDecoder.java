@@ -195,7 +195,7 @@ public class SampleDecoder {
     			transport.open();
     		} catch (TTransportException e) {
     			transport.close();
-    			LOGGER.error("Recovery Error opening connection to Master IP : {} and port : {}", IP, port);
+    			LOGGER.error("Recovery Error opening connection to IP : {} and port : {}", IP, port);
     			e.printStackTrace();
     			return null;
     		}

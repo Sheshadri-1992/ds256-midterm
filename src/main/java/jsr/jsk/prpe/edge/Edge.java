@@ -1,5 +1,7 @@
 package jsr.jsk.prpe.edge;
 
+import java.util.HashMap;
+
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
@@ -11,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jsr.jsk.prpe.miscl.Constants;
+import jsr.jsk.prpe.miscl.MyParser;
 import jsr.jsk.prpe.thrift.HeartBeatRequest;
 import jsr.jsk.prpe.thrift.HeartBeatResponse;
 import jsr.jsk.prpe.thrift.MasterService;
@@ -48,13 +51,26 @@ public class Edge {
 	}
 	
 	
+	
 	public void sendHeartBeat() {
-		TTransport transport = new TFramedTransport(new TSocket(Constants.MASTER_IP, Constants.MASTER_PORT));
+				
+		MyParser parser = new MyParser();
+		HashMap<String,String> masterLoc = parser.returnMasterLocation();
+		
+		String masterIp = "127.0.0.1";
+		Integer masterPort = 8080;
+		
+		if(masterLoc!=null) {
+			masterIp = masterLoc.get("ip");
+			masterPort = Integer.parseInt(masterLoc.get("port"));
+		}
+		
+		TTransport transport = new TFramedTransport(new TSocket(masterIp, masterPort));
 		try {
 			transport.open();
 		} catch (TTransportException e) {
 			transport.close();
-			LOGGER.error("Error opening connection to Master IP : {} and port : {}", Constants.MASTER_IP, Constants.MASTER_PORT);
+			LOGGER.error("Error opening connection to Master IP : {} and port : {}", masterIp, masterPort);
 			e.printStackTrace();
 			return;
 		}

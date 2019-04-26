@@ -144,7 +144,7 @@ public class SampleEncoder {
                 transport.open();
             } catch (TTransportException e) {
                 transport.close();
-                LOGGER.error("Error opening connection to Master IP : {} and port : {}", IP, port);
+                LOGGER.error("Error opening connection to IP : {} and port : {}", IP, port);
                 e.printStackTrace();
                 return;
             }

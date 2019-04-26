@@ -23,6 +23,7 @@ public class Constants {
 	public static final String TEMP_DIR = "./temp/";
 	public static final String RECOVERY_DIR = "./recovery/";
 	public static final String LOGS_DIR = "./Logs/";
+	public static final String CONF_FILE = "./conf.txt";
 	public static final int WRITE_REQUEST = 1;
 	public static final int ALLOWED_HB_MISS = 3;
 }

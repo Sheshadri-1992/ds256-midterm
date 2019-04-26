@@ -1,5 +1,6 @@
 package jsr.jsk.prpe.master;
 
+import java.util.HashMap;
 import java.util.concurrent.Executors;
 
 import org.apache.thrift.server.TThreadedSelectorServer;
@@ -9,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jsr.jsk.prpe.miscl.Constants;
+import jsr.jsk.prpe.miscl.MyParser;
 import jsr.jsk.prpe.servicehandler.MasterServiceHandler;
 import jsr.jsk.prpe.thrift.MasterService;
 
@@ -22,6 +24,17 @@ public class MasterServer {
 		// TODO Auto-generated method stub
 		System.out.println("Hello World!");
 		
+		MyParser parser = new MyParser();
+		HashMap<String,String> masterLoc = parser.returnMasterLocation();
+		
+		String masterIp = "127.0.0.1";
+		Integer masterPort = 8080;
+		
+		if(masterLoc!=null) {
+			masterIp = masterLoc.get("ip");
+			masterPort = Integer.parseInt(masterLoc.get("port"));
+		}
+				
 		masterServiceHandler = new MasterServiceHandler();
 		eventProcessor = new MasterService.Processor(masterServiceHandler);
 		

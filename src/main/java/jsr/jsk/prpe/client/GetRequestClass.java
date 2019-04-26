@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -19,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import jsr.jsk.prpe.erasurecoding.SampleDecoder;
 import jsr.jsk.prpe.miscl.Constants;
+import jsr.jsk.prpe.miscl.MyParser;
 import jsr.jsk.prpe.thrift.BlockLocation;
 import jsr.jsk.prpe.thrift.DataNodeLocation;
 import jsr.jsk.prpe.thrift.EdgeService;
@@ -48,13 +50,25 @@ public class GetRequestClass {
 	public void getFileReq() {
 		
 		LOGGER.info("Get request for file "+filename);
+		
+		MyParser parser = new MyParser();
+		HashMap<String,String> masterLoc = parser.returnMasterLocation();
+		
+		String masterIp = "127.0.0.1";
+		Integer masterPort = 8080;
+		
+		if(masterLoc!=null) {
+			masterIp = masterLoc.get("ip");
+			masterPort = Integer.parseInt(masterLoc.get("port"));
+		}
+		
 	
-		TTransport transport = new TFramedTransport(new TSocket(Constants.MASTER_IP, Constants.MASTER_PORT));
+		TTransport transport = new TFramedTransport(new TSocket(masterIp, masterPort));
 		try {
 			transport.open();
 		} catch (TTransportException e) {
 			transport.close();
-			LOGGER.error("Error opening connection to Master IP : {} and port : {}", Constants.MASTER_IP, Constants.MASTER_PORT);
+			LOGGER.error("Error opening connection to Master IP : {} and port : {}", masterIp, masterPort);
 			e.printStackTrace();
 		}
 		
