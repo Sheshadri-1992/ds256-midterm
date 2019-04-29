@@ -23,48 +23,42 @@ public class Edge {
 	private int nodeId;
 	private double reliability;
 	private static final Logger LOGGER = LoggerFactory.getLogger(Edge.class);
-	
+
 	public Edge(int nodeId, double reliability) {
 		super();
 		this.nodeId = nodeId;
 		this.reliability = reliability;
 	}
 
-
 	public int getNodeId() {
 		return nodeId;
 	}
-
 
 	public void setNodeId(int nodeId) {
 		this.nodeId = nodeId;
 	}
 
-
 	public double getReliability() {
 		return reliability;
 	}
 
-
 	public void setReliability(double reliability) {
 		this.reliability = reliability;
 	}
-	
-	
-	
+
 	public void sendHeartBeat() {
-				
+
 		MyParser parser = new MyParser();
-		HashMap<String,String> masterLoc = parser.returnMasterLocation();
-		
+		HashMap<String, String> masterLoc = parser.returnMasterLocation();
+
 		String masterIp = "127.0.0.1";
 		Integer masterPort = 8080;
-		
-		if(masterLoc!=null) {
+
+		if (masterLoc != null) {
 			masterIp = masterLoc.get("ip");
 			masterPort = Integer.parseInt(masterLoc.get("port"));
 		}
-		
+
 		TTransport transport = new TFramedTransport(new TSocket(masterIp, masterPort));
 		try {
 			transport.open();
@@ -74,23 +68,24 @@ public class Edge {
 			e.printStackTrace();
 			return;
 		}
-		
+
 		TProtocol protocol = new TBinaryProtocol(transport);
 		MasterService.Client masterClient = new MasterService.Client(protocol);
 		LOGGER.info("Sending hearbeat to master ");
-		
+
 		HeartBeatRequest myHbReq = new HeartBeatRequest();
 		myHbReq.setNodeId(nodeId);
-		
+
 		try {
 			HeartBeatResponse response = masterClient.heartbeat(myHbReq);
-			if(response.getStatus()==Constants.HEALTHY) {
+			if (response.getStatus() == Constants.HEALTHY) {
 				System.out.println("Got response from Master : HEALTHY");
 			}
 		} catch (TException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		transport.close();
 	}
-	
+
 }

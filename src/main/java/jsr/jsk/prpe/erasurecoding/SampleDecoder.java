@@ -89,6 +89,8 @@ public class SampleDecoder {
     		LOGGER.info("Created the directory "+Constants.TEMP_DIR);
     	}
         
+    	Long startTime = System.currentTimeMillis();
+    	
         for(DataNodeLocation dataloc : myDataNodeLoc) {
         	
         	String IP = dataloc.getIp();
@@ -125,7 +127,7 @@ public class SampleDecoder {
 			}
     		
     		transport.close();
-        }
+        }       
         
         
         // Read in any of the shards that are present.
@@ -156,7 +158,12 @@ public class SampleDecoder {
             LOGGER.info("Not enough shards present");
             return;
         }
-
+        
+        Long endTime = System.currentTimeMillis();
+        LOGGER.info("erasure_decoding_fetch_io_time="+filename+","+(endTime-startTime));
+        
+        
+        startTime = System.currentTimeMillis();
         // Make empty buffers for the missing shards.
         for (int i = 0; i < TOTAL_SHARDS; i++) {
             if (!shardPresent[i]) {
@@ -167,7 +174,11 @@ public class SampleDecoder {
         // Use Reed-Solomon to fill in the missing shards
         ReedSolomon reedSolomon = ReedSolomon.create(DATA_SHARDS, PARITY_SHARDS);
         reedSolomon.decodeMissing(shards, shardPresent, 0, shardSize);
-
+        endTime = System.currentTimeMillis();
+        
+        LOGGER.info("erasure_decoding_decode_time="+filename+","+(endTime-startTime));
+        
+        startTime = System.currentTimeMillis();
         // Combine the data shards into one buffer for convenience.
         // (This is not efficient, but it is convenient.)
         byte [] allBytes = new byte [shardSize * DATA_SHARDS];
@@ -184,6 +195,9 @@ public class SampleDecoder {
         LOGGER.info("Amount of bytes written "+fileSize);
         out.write(allBytes, BYTES_IN_INT, fileSize);
         LOGGER.info("Wrote " + decodedFile);
+        endTime = System.currentTimeMillis();
+        
+        LOGGER.info("erasure_decoding_final_io_time="+filename+(endTime-startTime));
         
     }
     
@@ -200,6 +214,7 @@ public class SampleDecoder {
     		LOGGER.info("Recovery Created the directory "+Constants.RECOVERY_DIR);
     	}
         
+    	Long startTime = System.currentTimeMillis();
         for(DataNodeLocation dataloc : myDataNodeLoc) {
         	
         	if(deadEdges.contains(dataloc)) {
@@ -269,7 +284,10 @@ public class SampleDecoder {
             	LOGGER.info("Recovery Lost erasure coded block added "+(blockNumber+ ":" + i) );
             }
         }
-
+        Long endTime = System.currentTimeMillis();
+        LOGGER.info("erasure_coding_recovery_prefetch_io_"+blockNumber+","+(endTime-startTime));
+        
+        startTime = System.currentTimeMillis();
         // We need at least DATA_SHARDS to be able to reconstruct the file.
         if (shardCount < DATA_SHARDS) {
             LOGGER.info("Recovery Not enough shards present");
@@ -286,7 +304,11 @@ public class SampleDecoder {
         // Use Reed-Solomon to fill in the missing shards
         ReedSolomon reedSolomon = ReedSolomon.create(DATA_SHARDS, PARITY_SHARDS);
         reedSolomon.decodeMissing(shards, shardPresent, 0, shardSize);
-
+        
+        endTime=System.currentTimeMillis();
+        LOGGER.info("erasure_coding_recovery_decode_time="+blockNumber+","+(endTime-startTime));
+        
+        startTime = System.currentTimeMillis();
         // Combine the data shards into one buffer for convenience.
         // (This is not efficient, but it is convenient.)
         byte [] allBytes = new byte [shardSize * DATA_SHARDS];
@@ -312,6 +334,8 @@ public class SampleDecoder {
         myFileStream.read(outputBytes);
         
         LOGGER.info("SampleDecoder sending bytes.. "+outputBytes.length);
+        endTime = System.currentTimeMillis();
+        LOGGER.info("erasure_coding_recovery_final_io_time="+blockNumber+","+(endTime-startTime));        
         
         return outputBytes;
     }

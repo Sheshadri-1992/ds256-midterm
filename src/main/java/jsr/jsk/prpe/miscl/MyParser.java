@@ -23,7 +23,7 @@ public class MyParser {
 			byte[] data = new byte[(int) file.length()];
 			fis.read(data);
 			fis.close();
-
+					
 			String str = new String(data, "UTF-8");
 			json = str;
 			System.out.println("The whole file is " + str);
