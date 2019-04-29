@@ -167,6 +167,8 @@ public class MasterServiceHandler implements MasterService.Iface {
 		}
 		
 		LOGGER.info("Recovery started ");
+		Long startTime = System.currentTimeMillis();
+		
 		
 		for(DataNodeLocation myDataLoc : edgeDevicesList.values()) {
 			
@@ -229,6 +231,9 @@ public class MasterServiceHandler implements MasterService.Iface {
 			LOGGER.info("The element we tried to remove "+myDataLoc.getNodeid());
 			LOGGER.info("edgesToRecover contains that element? "+edgesToRecover.contains(new Integer(myDataLoc.getNodeid())));
 		}
+		
+		Long endTime = System.currentTimeMillis();
+		LOGGER.info("erasure_coding_recovery_total="+blocksLostHashMap.size()+","+(endTime-startTime));
 	}
 	
 
