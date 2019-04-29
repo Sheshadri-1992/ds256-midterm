@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jsr.jsk.prpe.miscl.Constants;
+import jsr.jsk.prpe.miscl.MyParser;
 import jsr.jsk.prpe.thrift.BlockLocation;
 import jsr.jsk.prpe.thrift.BlockReportRequest;
 import jsr.jsk.prpe.thrift.BlockReportResponse;
@@ -301,6 +302,28 @@ public class MasterServiceHandler implements MasterService.Iface {
 	}
 
 	public WriteBlockResponse requestBlocksToWrite(WriteBlockRequest writeBlockReq) throws TException {
+		
+		MyParser parser = new MyParser();
+		HashMap<String,String> codingMap = parser.returnErasureCoding();
+		Integer NUM_ERASURE_CODING = 6;
+		Integer PARITY_SHARDS = 2;
+		Integer DATA_SHARDS = 4;
+		
+		String num_coding = "6";
+		String parity_shards = "2";
+		String data_shards = "4";
+		
+		if(codingMap!=null) {
+			num_coding = codingMap.get("total");
+			parity_shards = codingMap.get("parity");
+			data_shards = codingMap.get("data");
+			
+			NUM_ERASURE_CODING = Integer.parseInt(num_coding);
+			PARITY_SHARDS = Integer.parseInt(parity_shards);
+			DATA_SHARDS = Integer.parseInt(data_shards);
+			
+			LOGGER.info("The number of erasure coding shards "+NUM_ERASURE_CODING+" data "+DATA_SHARDS+" parity shards "+PARITY_SHARDS);
+		}
 
 		Integer handle = writeBlockReq.getHandle();
 		WriteBlockResponse response = new WriteBlockResponse();
@@ -344,7 +367,7 @@ public class MasterServiceHandler implements MasterService.Iface {
 				int numRand = edgeDevicesList.size(), count = 0;
 				type = Constants.ERASURE_CODING; /** Important field **/
 
-				while (count != Constants.NUM_ERASURE_CODING) {
+				while (count != NUM_ERASURE_CODING) {
 
 					Random rand = new Random();
 					int index = rand.nextInt(numRand);

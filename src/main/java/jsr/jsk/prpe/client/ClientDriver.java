@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -16,9 +17,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jsr.jsk.prpe.miscl.Constants;
+import jsr.jsk.prpe.miscl.MyParser;
 import jsr.jsk.prpe.thrift.CloseFileRequest;
 import jsr.jsk.prpe.thrift.CloseFileResponse;
 import jsr.jsk.prpe.thrift.MasterService;
+import jsr.jsk.prpe.thrift.WriteBlockRequest;
 
 /**
  * The following are the steps that need to be taken to put and get a file
@@ -30,14 +33,60 @@ import jsr.jsk.prpe.thrift.MasterService;
 public class ClientDriver {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ClientDriver.class);
+	
+	public void clearStructures() {
+		
+		LOGGER.info("HAHAHA.. this is gonna reset all structures!");
+		
+		MyParser parser = new MyParser();
+		HashMap<String,String> masterLoc = parser.returnMasterLocation();
+		
+		String masterIp = "127.0.0.1";
+		Integer masterPort = 8080;
+		
+		if(masterLoc!=null) {
+			masterIp = masterLoc.get("ip");
+			masterPort = Integer.parseInt(masterLoc.get("port"));
+		}
+		
+		CloseFileResponse myRes = null;
+		
+		TTransport transport = new TFramedTransport(new TSocket(masterIp, masterPort));
+		try {
+			transport.open();
+		} catch (TTransportException e) {
+			transport.close();
+			LOGGER.error("Error opening connection to Master IP : {} and port : {}", masterIp, masterPort);
+			e.printStackTrace();
+		}
+		
+		TProtocol protocol = new TBinaryProtocol(transport);
+		MasterService.Client masterClient = new MasterService.Client(protocol);
+		
+		try {
+			myRes = masterClient.clearStructures();
+			if(myRes.getStatus() == Constants.SUCCESS)
+				LOGGER.info("Successfully reset all structures");
+		} catch (TException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		if (args.length != 3) {
+		if (args.length != 3) {						
 			System.exit(0);
 		}
 
 		int choice = (int) Integer.valueOf(args[0]);
+		
+		if(choice==999) {
+			ClientDriver myClient = new ClientDriver();
+			myClient.clearStructures();
+			System.exit(0);
+		}
+		
 		String filename = args[1];
 		double storageBudget = Double.valueOf(args[2]);
 		FileOutputStream myStream = null;
@@ -52,7 +101,7 @@ public class ClientDriver {
 
 		String[] filenames = new String[100];
 
-		for (int i = 0; i < 100; i++) {
+		for (int i = 0; i < 1; i++) {
 			filenames[i] = "microbatch" + i + ".txt";
 		}
 

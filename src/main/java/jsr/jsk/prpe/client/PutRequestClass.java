@@ -75,6 +75,7 @@ public class PutRequestClass {
 	private int sessionHandle = 0;
 	private FileOutputStream replicationStream;
 	private FileOutputStream erasureCodingStream;
+	private Integer NUM_ERASURE_CODING = 6;
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(PutRequestClass.class);
 	
@@ -87,6 +88,17 @@ public class PutRequestClass {
 		inputFileName = argFileName;
 		inputDirPath = Constants.DIRECTORY_PATH;
 		storageBudget = argStorageBudget;
+		
+		MyParser parser = new MyParser();
+		HashMap<String,String> codingMap = parser.returnErasureCoding();
+		
+		String num_coding = "6";
+	
+		if(codingMap!=null) {
+			num_coding = codingMap.get("total");
+			NUM_ERASURE_CODING = Integer.parseInt(num_coding);
+			LOGGER.info("The number of erasure coding shards "+NUM_ERASURE_CODING);
+		}
 	}
 	
 	public void openRequest() {
@@ -122,7 +134,6 @@ public class PutRequestClass {
 		/** Session handle is set here **/
 		writeFile();
 	}
-	
 	
 	
 	/**
@@ -290,7 +301,7 @@ public class PutRequestClass {
 			}else {
 				
 				long start = System.currentTimeMillis();
-				writeConcurrently(Constants.NUM_ERASURE_CODING, Constants.ERASURE_CODING, blockNum, data, myDataLocs);
+				writeConcurrently(NUM_ERASURE_CODING, Constants.ERASURE_CODING, blockNum, data, myDataLocs);
 				long end = System.currentTimeMillis();
 				
 				long timePerBlock = end - start;

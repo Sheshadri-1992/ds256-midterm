@@ -3,3 +3,15 @@ java -cp target/jsk-0.0.1-SNAPSHOT-jar-with-dependencies.jar jsr.jsk.prpe.master
 java -cp target/jsk-0.0.1-SNAPSHOT-jar-with-dependencies.jar jsr.jsk.prpe.edge.EdgeServer 1 127.0.0.1 9001
 
 java -cp target/jsk-0.0.1-SNAPSHOT-jar-with-dependencies.jar jsr.jsk.prpe.edge.EdgeServer 3 10.24.24.235 9003
+
+put
+java -cp target/jsk-0.0.1-SNAPSHOT-jar-with-dependencies.jar jsr.jsk.prpe.client.ClientDriver 0 microbatch.txt 2.3 
+
+get
+java -cp target/jsk-0.0.1-SNAPSHOT-jar-with-dependencies.jar jsr.jsk.prpe.client.ClientDriver 1 microbatch.txt 2.3
+
+java -cp target/jsk-0.0.1-SNAPSHOT-jar-with-dependencies.jar jsr.jsk.prpe.edge.EdgeServer 2 10.160.0.2 9002
+java -cp target/jsk-0.0.1-SNAPSHOT-jar-with-dependencies.jar jsr.jsk.prpe.edge.EdgeServer 3 10.160.0.2 9003
+java -cp target/jsk-0.0.1-SNAPSHOT-jar-with-dependencies.jar jsr.jsk.prpe.edge.EdgeServer 4 10.160.0.2 9004
+java -cp target/jsk-0.0.1-SNAPSHOT-jar-with-dependencies.jar jsr.jsk.prpe.edge.EdgeServer 5 10.160.0.2 9005
+java -cp target/jsk-0.0.1-SNAPSHOT-jar-with-dependencies.jar jsr.jsk.prpe.edge.EdgeServer 6 10.160.0.2 9006

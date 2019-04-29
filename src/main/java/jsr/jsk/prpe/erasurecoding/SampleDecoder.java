@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -26,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jsr.jsk.prpe.miscl.Constants;
+import jsr.jsk.prpe.miscl.MyParser;
 import jsr.jsk.prpe.thrift.DataNodeLocation;
 import jsr.jsk.prpe.thrift.EdgeService;
 import jsr.jsk.prpe.thrift.GetRequest;
@@ -41,9 +43,9 @@ import jsr.jsk.prpe.thrift.GetResponse;
  */
 public class SampleDecoder {
 
-	public static final int DATA_SHARDS = 4;
-    public static final int PARITY_SHARDS = 2;
-    public static final int TOTAL_SHARDS = 6;
+	public static int DATA_SHARDS = 4;
+    public static int PARITY_SHARDS = 2;
+    public static int TOTAL_SHARDS = 6;
     public static final int BYTES_IN_INT = 4;
     private static final Logger LOGGER = LoggerFactory.getLogger(SampleDecoder.class);
     public ArrayList<String> lostBlocks = null;
@@ -51,6 +53,24 @@ public class SampleDecoder {
     public SampleDecoder() {
 	
     	lostBlocks = new ArrayList<String>();
+    	MyParser parser = new MyParser();
+		HashMap<String,String> codingMap = parser.returnErasureCoding();
+		
+		String num_coding = "6";
+		String parity_shards = "2";
+		String data_shards = "4";
+		
+		if(codingMap!=null) {
+			num_coding = codingMap.get("total");
+			parity_shards = codingMap.get("parity");
+			data_shards = codingMap.get("data");
+			
+			TOTAL_SHARDS = Integer.parseInt(num_coding);
+			PARITY_SHARDS = Integer.parseInt(parity_shards);
+			DATA_SHARDS = Integer.parseInt(data_shards);
+			
+			LOGGER.info("The number of erasure coding shards "+TOTAL_SHARDS+" data "+DATA_SHARDS+" parity shards "+PARITY_SHARDS);
+		}
 	}
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
